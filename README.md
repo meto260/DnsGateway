@@ -2,6 +2,8 @@
 
 DnsGateway is a robust and efficient DNS tunneling gateway that allows you to bypass network restrictions by encapsulating data in DNS queries and responses. This tool is particularly useful for scenarios where internet access is limited or heavily filtered. 🚀
 
+![DnsGateway Preview](https://raw.githubusercontent.com/meto260/DnsGateway/refs/heads/master/%7B0F42C889-68B8-4A77-B3C7-A4316211AEC5%7D.png)
+
 ## Features ✨
 
 - **Secure DNS Tunneling**: Communicate data through DNS queries in a secure and efficient manner.
