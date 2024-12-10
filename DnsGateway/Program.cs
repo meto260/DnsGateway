@@ -3,15 +3,25 @@ using System.Net;
 using System.Threading.Tasks;
 using ARSoft.Tools.Net.Dns;
 using DnsGateway;
+using DnsGateway.Utils;
 using DnsServer = DnsGateway.DnsServer;
 
-Console.WriteLine("DNS Gateway Server Başlatılıyor...");
+var externalIp = await NetworkHelper.GetExternalIpAddressAsync();
+if (externalIp == null) {
+    Console.WriteLine("Dış IP adresi alınamadı. Uygulama sonlandırılıyor.");
+    return;
+}
 
-var blacklist = DnsGateway.Utils.FileHelper.LoadBlacklist("blacklist.txt");
+Console.WriteLine($"Dış IP Adresi: {externalIp}");
+
+var blacklist = FileHelper.LoadBlacklist("blacklist.txt");
 var loggingStrategy = new LoggingStrategy();
 var blacklistStrategy = new BlacklistStrategy(blacklist);
 var dnsQueryStrategy = new DnsQueryStrategy();
 
+var rateLimiter = new RateLimiter(maxRequests: 100000, windowSize: TimeSpan.FromHours(1));
+
+//var dnsServer = new DnsServer(IPAddress.Parse(externalIp), 10, 10);
 var dnsServer = new DnsServer(IPAddress.Any, 10, 10);
 
 dnsServer.QueryReceived += async (sender, e) => {
@@ -31,8 +41,13 @@ dnsServer.QueryReceived += async (sender, e) => {
         loggingStrategy.LogDnsRequest(message, clientIp, isBlocked: true, blockedReason: "Blacklist'e alındı");
         return;
     }
+
     e.Response = await dnsQueryStrategy.ResolveDnsQuery(message);
 
+    if (!rateLimiter.IsAllowed(clientIp)) {
+        Console.WriteLine($"Rate Limiting Aşıldı: {clientIp}");
+        return;
+    }
     loggingStrategy.LogDnsRequest(message, clientIp);
 };
 
